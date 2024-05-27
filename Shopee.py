@@ -13,7 +13,7 @@ class Shopee_extract:
         self.soup = BeautifulSoup(html_file, "html.parser")
 
     def take_shop_info(self):
-        ahop_info = self.soup.find_all("span", class_ = "Cs6w3G")
+        shop_info = self.soup.find_all("span", class_ = "Cs6w3G")
         all_info = []
         for each in shop_info:
             each_info = each.text.strip()
