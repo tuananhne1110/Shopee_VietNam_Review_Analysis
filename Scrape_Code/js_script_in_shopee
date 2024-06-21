@@ -1,1 +1,88 @@
+while (true) {  // Outer loop to retry from the beginning
+      await new Promise(resolve => setTimeout(resolve, 300));
+      let starRating = 5;  // Start with 5 stars
 
+      while (starRating >= 1) {
+        // Apply the filter based on the current star rating
+        let filterDivs = document.querySelectorAll('.product-rating-overview__filter');
+        let filterApplied = false;
+
+        filterDivs.forEach(filterDiv => {
+          let filterText = filterDiv.innerText.trim();
+          if (filterText.includes(`${starRating} Sao`)) {
+            filterDiv.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+            console.log(`Filter applied: ${filterText}`);
+            filterApplied = true;
+          }
+        });
+
+        if (filterApplied) {
+          // Wait for the filter to be applied
+          await new Promise(resolve => setTimeout(resolve, 300));  // Adjust the delay as needed
+        } else {
+          console.error(`No suitable filter found for ${starRating} Sao`);
+          continue;
+        }
+        let currentPage = 1;
+        let nextPageAvailable = true;
+        while (nextPageAvailable) {
+          // Fetch the HTML content
+          let htmlContent = document.documentElement.outerHTML;
+          await fetch("http://127.0.0.1:5000/save_html", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ html_content: htmlContent, page: currentPage, starRating: starRating })
+          }); console.log(`Html fetch successful`);
+
+          // Find all buttons with class '.shopee-button-no-outline'
+          let buttons = document.querySelectorAll('.shopee-button-no-outline');
+          let nextPageButton = null;
+          let nextPageNumber = currentPage;
+
+          // Find the button for the next sequential page
+          buttons.forEach(button => {
+            let buttonText = button.innerText.trim();
+            let pageNumber = parseInt(buttonText);
+
+            if (!isNaN(pageNumber) && pageNumber === currentPage + 1) {
+              nextPageButton = button;
+              nextPageNumber = pageNumber;
+            }
+          });
+
+          if (nextPageButton) {
+            console.log(`Next page button found: ${nextPageButton.innerText}`);
+            try {
+              nextPageButton.click();
+              console.log(`Button clicked to go to page ${nextPageNumber}`);
+              currentPage = nextPageNumber;
+              await new Promise(resolve => setTimeout(resolve, 600));  // Adjust the delay as needed
+            } catch (e) {
+              console.error(`Error clicking the next page button: ${e}`);
+              nextPageAvailable = false;
+            }
+          }else {
+            console.log('not found, starting a new loop.');
+            break; 
+          }
+          if (currentPage > 8) {
+            console.log('Reached page limit, stopping pagination.');
+            nextPageAvailable = false;
+          }
+          // Wait for the page to load before retrying
+          await new Promise(resolve => setTimeout(resolve, 300)); 
+        }
+
+        // Decrease the star rating for the next iteration
+        starRating--;
+
+        // Wait before applying the next filter
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Exit the outer loop after applying all filters
+      break;
+    }
+  
